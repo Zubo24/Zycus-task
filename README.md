@@ -4,6 +4,8 @@ This repository contains the solution for the Support AI Intern Task, demonstrat
 
 ## Project Overview
 
+**Loom walkthrough:** - https://www.loom.com/share/58f23c461259483ebb11bf5f321ab9f0
+
 The project consists of three main components:
 1. **Task 1: Ticket Triage (`src/triage.py`)** - Parses incoming support tickets, uses an LLM to categorize them (Product, Category, Urgency), fetches relevant knowledge base articles via BM25 retrieval, determines routing via a deterministic ruleset, and drafts a contextual first response.
 2. **Task 2: Account Health Briefs (`src/account_brief.py`)** - Synthesizes recent ticket data and account context into a structured executive summary, extracts flagged issues with verified direct quotes, and suggests talking points for Customer Success Managers.
@@ -87,5 +89,6 @@ python run_demo.py
 This project is built and optimized for a local **1B parameter model (gemma3:1b)**, not a hosted API like Anthropic or OpenAI. 
 - **Trade-offs:** Running locally ensures zero data privacy concerns and incurs zero API costs. However, small models struggle significantly with instruction following, structured JSON output, and complex logic. We had to implement robust application-level guardrails (multi-step extraction, deterministic post-checks, input guards) to compensate for these model limitations.
 - **Speed:** Local inference on CPUs can be slow and prevents concurrent processing at scale.
+- **Fallback Guard:** The "empty-data fallback" currently pieces together a rigid template using NPS and usage trends. It lacks true synthesis (e.g. failing to flag a contradiction between a 'Healthy' status and 'Inactive' usage with low NPS), which would require a smarter, multi-shot LLM pass instead of our current deterministic string injection.
 
 For an in-depth discussion on design choices, failure modes, and scalability trade-offs, please refer to the [DESIGN_NOTE.md](DESIGN_NOTE.md).
