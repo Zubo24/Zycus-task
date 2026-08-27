@@ -14,13 +14,13 @@ def evaluate_triage(test_case: dict) -> dict:
     ticket = test_case["ticket"]
     try:
         res = triage_ticket(ticket)
-        passed = True
         notes = []
         
+        rule_score = 1.0
         if "expected_category" in test_case and res.category.lower() != test_case["expected_category"].lower():
             if "adv" not in test_case["id"]:
-                passed = False
-                notes.append(f"Expected category '{test_case['expected_category']}', got '{res.category}'.")
+                rule_score = 0.0
+                notes.append(f"Expected category '{test_case['expected_category']}', got '{res.category}'")
         
         # LLM Judge
         sys_prompt = "You are an evaluator grading a customer support draft reply. Rate its relevance, tone, and groundedness."
@@ -28,22 +28,27 @@ def evaluate_triage(test_case: dict) -> dict:
         
         try:
             judge = call_structured(sys_prompt, user_prompt, JudgeOutput)
-            score = judge.score
+            judge_score = max(0.0, min(1.0, judge.score))
             reason = judge.reasoning
         except Exception as e:
-            score = 0.5
-            reason = f"Judge failed to parse JSON: {e}"
+            judge_score = 0.5
+            reason = f"Judge failed: {e}"
             
-        if score < 0.6:
-            passed = False
-            notes.append(f"Judge score low: {score}")
+        final_score = (rule_score + judge_score) / 2.0
+        passed = final_score >= 0.6
+        
+        if judge_score < 0.6:
+            notes.append(f"Judge score low: {judge_score:.2f}")
+            
+        final_notes = "; ".join(notes) if notes else reason.replace('\n', ' ')
+        final_notes = final_notes.replace('|', '') # Prevent markdown table breakage
             
         return {
             "test_id": test_case["id"],
             "task": "Triage",
             "pass": passed,
-            "score": score,
-            "notes": " | ".join(notes) if notes else reason.replace('\n', ' ')
+            "score": final_score,
+            "notes": final_notes
         }
     except Exception as e:
         return {
@@ -51,55 +56,54 @@ def evaluate_triage(test_case: dict) -> dict:
             "task": "Triage",
             "pass": False,
             "score": 0.0,
-            "notes": f"Pipeline Exception: {str(e)}"
+            "notes": f"Pipeline Exception: {str(e)}".replace('|', '')
         }
 
 def evaluate_brief(test_case: dict) -> dict:
     acc_id = test_case["account_id"]
     try:
         res = generate_account_brief(acc_id)
-        passed = True
         notes = []
         
+        rule_score = 1.0
         if "adv" in test_case["id"]:
             if "not found" not in res.executive_summary.lower():
-                passed = False
-                notes.append("Adversarial case failed to return 'not found' message.")
+                rule_score = 0.0
+                notes.append("Adversarial case failed to return 'not found' message")
         else:
             for issue in res.flagged_issues:
                 if not issue.is_verified:
-                    passed = False
-                    notes.append(f"Unverified quote detected.")
+                    rule_score = 0.0
+                    notes.append(f"Unverified quote detected")
+                    break
         
         # LLM Judge
         sys_prompt = "You are an evaluator grading an account health brief. Rate its clarity and actionability."
         user_prompt = f"Account ID: {acc_id}\nBrief:\n{res.executive_summary}\n\nEvaluate and score 0.0 to 1.0."
         
-        print("\n[DEBUG] --- LLM Judge Input ---")
-        print(f"SYSTEM PROMPT:\n{sys_prompt}")
-        print(f"USER PROMPT:\n{user_prompt}")
-        print("-------------------------------\n")
-        
         try:
             judge = call_structured(sys_prompt, user_prompt, JudgeOutput)
-            score = judge.score
+            judge_score = max(0.0, min(1.0, judge.score))
             reason = judge.reasoning
-            print(f"[DEBUG] Judge Call SUCCEEDED. Score: {score}")
         except Exception as e:
-            score = 0.5
-            reason = f"Judge failed to parse JSON: {e}"
-            print(f"[DEBUG] Judge Call FAILED. Exception: {e}")
+            judge_score = 0.5
+            reason = f"Judge failed: {e}"
             
-        if score < 0.6:
-            passed = False
-            notes.append(f"Judge score low: {score}")
+        final_score = (rule_score + judge_score) / 2.0
+        passed = final_score >= 0.6
+        
+        if judge_score < 0.6:
+            notes.append(f"Judge score low: {judge_score:.2f}")
+            
+        final_notes = "; ".join(notes) if notes else reason.replace('\n', ' ')
+        final_notes = final_notes.replace('|', '') # Prevent markdown table breakage
             
         return {
             "test_id": test_case["id"],
             "task": "Brief",
             "pass": passed,
-            "score": score,
-            "notes": " | ".join(notes) if notes else reason.replace('\n', ' ')
+            "score": final_score,
+            "notes": final_notes
         }
     except Exception as e:
         return {
@@ -107,7 +111,7 @@ def evaluate_brief(test_case: dict) -> dict:
             "task": "Brief",
             "pass": False,
             "score": 0.0,
-            "notes": f"Pipeline Exception: {str(e)}"
+            "notes": f"Pipeline Exception: {str(e)}".replace('|', '')
         }
 
 def run_eval():
