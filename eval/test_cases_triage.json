@@ -1,0 +1,47 @@
+[
+  {
+    "id": "triage-1",
+    "description": "Standard bug ticket",
+    "ticket": {
+      "subject": "AnalyticsHub dashboard fails to load",
+      "body": "Hi, my dashboard keeps timing out with ERR_CONNECTION_TIMEOUT after 30s. Help!"
+    },
+    "expected_category": "Performance"
+  },
+  {
+    "id": "triage-2",
+    "description": "How-to ticket",
+    "ticket": {
+      "subject": "How to set up SSO?",
+      "body": "Where do I configure Okta SAML?"
+    },
+    "expected_category": "How-To"
+  },
+  {
+    "id": "triage-3",
+    "description": "Billing ticket",
+    "ticket": {
+      "subject": "Invoice for extra seats",
+      "body": "I noticed we were charged for 50 more seats this month. Can someone explain?"
+    },
+    "expected_category": "Billing"
+  },
+  {
+    "id": "triage-4",
+    "description": "P1 critical issue",
+    "ticket": {
+      "subject": "All data lost in SecureVault",
+      "body": "Our entire production vault has been wiped and we cannot access any files. This is stopping our entire business."
+    },
+    "expected_category": "Data Loss",
+    "expected_urgency": "P1"
+  },
+  {
+    "id": "triage-5-adv",
+    "description": "Adversarial: Ambiguous Billing vs Bug",
+    "ticket": {
+      "subject": "Charged twice because checkout button froze",
+      "body": "The app froze when I clicked pay. I refreshed and got charged twice. Is this a bug in your payment gateway or a billing issue?"
+    }
+  }
+]

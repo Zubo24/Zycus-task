@@ -1,0 +1,27 @@
+[
+  {
+    "id": "brief-1",
+    "account_id": "ACC-3336",
+    "description": "Standard account"
+  },
+  {
+    "id": "brief-2",
+    "account_id": "ACC-3033",
+    "description": "Standard account"
+  },
+  {
+    "id": "brief-3",
+    "account_id": "ACC-7893",
+    "description": "Standard account"
+  },
+  {
+    "id": "brief-4",
+    "account_id": "ACC-4654",
+    "description": "Standard account"
+  },
+  {
+    "id": "brief-5-adv",
+    "account_id": "ACC-FAKE-000",
+    "description": "Adversarial: fake account ID"
+  }
+]
