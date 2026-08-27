@@ -1,5 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List
+
+VALID_CATEGORIES = ["Bug", "Feature Request", "How-To", "Performance", "Billing", "Integration", "Onboarding", "Data Loss"]
+VALID_URGENCIES = ["P1", "P2", "P3", "P4"]
 
 # --- Task 1 Models ---
 
@@ -7,9 +10,25 @@ class TriageClassification(BaseModel):
     """The structured output strictly produced by the first LLM classification call."""
     product: str = Field(description="One of: DataBridge Pro, CloudSync, AnalyticsHub, SecureVault, WorkflowEngine, or Unknown")
     product_area: str = Field(description="Module within product, e.g. Connectors")
-    category: str = Field(description="Bug / Feature Request / How-To / Performance / Billing / Integration / Onboarding / Data Loss")
-    urgency: str = Field(description="P1, P2, P3, or P4")
+    category: str = Field(description="Respond with EXACTLY ONE of these words: Bug, Feature Request, How-To, Performance, Billing, Integration, Onboarding, Data Loss. Do not list multiple options. Do not include the word 'or'.")
+    urgency: str = Field(description="Respond with EXACTLY ONE of: P1, P2, P3, P4.")
     reasoning: str = Field(description="1-3 sentences explaining the classification")
+
+    @field_validator('category')
+    @classmethod
+    def validate_category(cls, v):
+        for valid in VALID_CATEGORIES:
+            if valid.lower() == v.lower().strip():
+                return valid
+        raise ValueError(f"You returned multiple options or an invalid category: '{v}'. Pick exactly ONE valid category (e.g. Bug, Performance, Integration).")
+
+    @field_validator('urgency')
+    @classmethod
+    def validate_urgency(cls, v):
+        for valid in VALID_URGENCIES:
+            if valid.lower() == v.lower().strip():
+                return valid
+        raise ValueError(f"You returned multiple options or an invalid urgency: '{v}'. Pick exactly ONE valid urgency (P1, P2, P3, P4).")
 
 class TriageResult(BaseModel):
     """The final assembled output returned by the triage pipeline."""

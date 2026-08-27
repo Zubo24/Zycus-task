@@ -11,6 +11,11 @@ load_dotenv()
 
 T = TypeVar('T', bound=BaseModel)
 
+class LLMParseError(Exception):
+    def __init__(self, message: str, raw_response: str):
+        super().__init__(message)
+        self.raw_response = raw_response
+
 def _call_anthropic(system_prompt: str, user_prompt: str) -> str:
     import anthropic
     api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -144,7 +149,7 @@ def call_structured(system_prompt: str, user_prompt: str, response_model: Type[T
             return res_retry
         except Exception as e2:
             print(f"[DEBUG] Retry Attempt Parse: FAILED. Exception:\n{e2}\n")
-            raise
+            raise LLMParseError(f"Failed to parse LLM output after retry: {e2}", raw_response)
 
 def call_text(system_prompt: str, user_prompt: str) -> str:
     """Same as call_structured but returns raw text without JSON parsing."""

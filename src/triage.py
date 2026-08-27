@@ -54,7 +54,57 @@ def triage_ticket(ticket: dict | str) -> TriageResult:
         "You are an expert technical support triage agent. Read the ticket and classify it. "
         "Strictly adhere to the enum values described in the schema."
     )
-    classification = call_structured(sys_prompt_classification, ticket_text, TriageClassification)
+    from src.llm_client import LLMParseError
+    from src.schemas import VALID_CATEGORIES, VALID_URGENCIES
+
+    try:
+        classification = call_structured(sys_prompt_classification, ticket_text, TriageClassification)
+    except LLMParseError as e:
+        print(f"[DEBUG] Falling back to deterministic extraction due to LLMParseError")
+        raw_text = e.raw_response
+        
+        # Try to salvage valid JSON fields from the raw string
+        salvaged_product = "Unknown"
+        salvaged_area = "Unknown"
+        salvaged_reasoning = "Fallback classification used due to repeated LLM formatting failures."
+        
+        try:
+            import json
+            # Strip potential markdown blocks
+            clean_text = raw_text.strip()
+            if clean_text.startswith("```json"): clean_text = clean_text[7:]
+            elif clean_text.startswith("```"): clean_text = clean_text[3:]
+            if clean_text.endswith("```"): clean_text = clean_text[:-3]
+            clean_text = clean_text.strip()
+            
+            partial_json = json.loads(clean_text)
+            salvaged_product = partial_json.get("product", "Unknown")
+            salvaged_area = partial_json.get("product_area", "Unknown")
+            salvaged_reasoning = partial_json.get("reasoning", salvaged_reasoning)
+        except Exception:
+            pass # Use defaults if it's completely unparseable
+            
+        raw_lower = raw_text.lower()
+        
+        fallback_cat = "Bug" # ultimate default
+        for cat in VALID_CATEGORIES:
+            if cat.lower() in raw_lower:
+                fallback_cat = cat
+                break
+                
+        fallback_urgency = "P3" # ultimate default
+        for urg in VALID_URGENCIES:
+            if urg.lower() in raw_lower:
+                fallback_urgency = urg
+                break
+                
+        classification = TriageClassification.model_construct(
+            product=salvaged_product,
+            product_area=salvaged_area,
+            category=fallback_cat,
+            urgency=fallback_urgency,
+            reasoning=salvaged_reasoning
+        )
     
     # 3. KB Retrieval
     # Combine ticket content and LLM classification for a rich BM25 query
