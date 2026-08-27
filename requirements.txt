@@ -1,0 +1,9 @@
+
+rank-bm25
+pydantic
+fastapi
+uvicorn
+python-dotenv
+streamlit
+pytest
+requests
